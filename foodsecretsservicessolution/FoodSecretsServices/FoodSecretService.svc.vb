@@ -103,6 +103,97 @@ Public Class FoodSecretService
 
         Return rtrnResult
     End Function
+'Match Recipes to Daily Calories
+    Public Function MatchRecipesDailyCalories(ByVal targetCalories As Integer) As DailyMeals Implements IFoodSecretService.MatchRecipesDailyCalories
+
+        Dim apiUrl As String = "https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/mealplans/generate"
+        Dim params As String = "targetCalories=" + targetCalories.ToString() + "&timeFrame=day"
+        Dim client As New WebClient
+
+        client.Headers.Add("X-Mashape-Key", apiKey)
+        client.Headers.Add("Accept", acceptHeader)
+        Dim result As String = client.DownloadString(String.Format("{0}?{1}", apiUrl, params))
+
+        Dim jsonObj As JObject = JsonConvert.DeserializeObject(Of Object)(result)
+
+        Dim rtrnResult As New DailyMeals()
+        rtrnResult.meals = New List(Of Meal)()
+
+        If jsonObj("meals").Count > 0 Then
+            For Each obj As JObject In jsonObj("meals")
+                Dim mealObj As Meal = New Meal()
+                mealObj.id = obj("id")
+                mealObj.image = "https://spoonacular.com/recipeImages/" + obj("image").ToString
+                mealObj.readyInMinutes = obj("readyInMinutes")
+                mealObj.title = obj("title")
+                rtrnResult.meals.Add(mealObj)
+            Next
+        End If
+
+        rtrnResult.calories = jsonObj("nutrients")("calories")
+        rtrnResult.carbohydrates = jsonObj("nutrients")("carbohydrates")
+        rtrnResult.fat = jsonObj("nutrients")("fat")
+        rtrnResult.protein = jsonObj("nutrients")("protein")
+
+        Return rtrnResult
+    End Function
+
+    'Get Recipe Information
+    Public Function GetRecipeInformation(ByVal RecipeID As Integer) As RecipeInformation Implements IFoodSecretService.GetRecipeInformation
+
+        Dim apiUrl As String = "https://spoonacular-recipe-food-nutrition-v1.p.mashape.com/recipes/" + RecipeID.ToString() + "/information"
+        Dim params As String = "includeNutrition=true"
+        Dim client As New WebClient
+
+        client.Headers.Add("X-Mashape-Key", apiKey)
+        client.Headers.Add("Accept", acceptHeader)
+        Dim result As String = client.DownloadString(String.Format("{0}?{1}", apiUrl, params))
+
+        Dim jsonObj As JObject = JsonConvert.DeserializeObject(Of Object)(result)
+
+        Dim rtrnResult As New RecipeInformation()
+
+        rtrnResult.aggregateLikes = jsonObj("aggregateLikes")
+        rtrnResult.cheap = jsonObj("cheap")
+        'rtrnResult.dairyFree = jsonObj("dairyFree")
+        'rtrnResult.glutenFree = jsonObj("glutenFree")
+        'rtrnResult.ketogenic = jsonObj("ketogenic")
+        'rtrnResult.lowFodmap = jsonObj("lowFodmap") 
+        rtrnResult.servings = jsonObj("servings")
+        rtrnResult.spoonacularScore = jsonObj("spoonacularScore")
+        'rtrnResult.sustainable = jsonObj("sustainable")
+        'rtrnResult.vegan = jsonObj("vegan")
+        'rtrnResult.vegetarian = jsonObj("vegetarian")
+        rtrnResult.veryHealthy = jsonObj("veryHealthy")
+        rtrnResult.veryPopular = jsonObj("veryPopular")
+        rtrnResult.weightWatcherSmartPoints = jsonObj("weightWatcherSmartPoints")
+        'rtrnResult.whole30 = jsonObj("whole30")
+        rtrnResult.title = jsonObj("title")
+        rtrnResult.readyInMinutes = jsonObj("readyInMinutes")
+        rtrnResult.image = jsonObj("image")
+
+        Dim jObj As JObject = jsonObj("nutrition")
+        Dim nutritionArray As JArray = jObj("nutrients")
+        For Each obj As JObject In nutritionArray
+            If obj("title").ToString() = "Calories" Then
+                rtrnResult.Calories = obj("amount").ToString()
+            End If
+
+            If obj("title").ToString() = "Fat" Then
+                rtrnResult.Fat = obj("amount").ToString()
+            End If
+
+            If obj("title").ToString() = "Carbohydrates" Then
+                rtrnResult.Carbs = obj("amount").ToString()
+            End If
+
+            If obj("title").ToString() = "Protein" Then
+                rtrnResult.Protein = obj("amount").ToString()
+            End If
+        Next
+
+        Return rtrnResult
+    End Function
 
 
 
